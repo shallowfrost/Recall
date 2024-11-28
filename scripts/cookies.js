@@ -1,3 +1,10 @@
+/**
+ * Sets a cookie with the specified name, value, and expiration time in days.
+ * 
+ * @param {string} name - The name of the cookie.
+ * @param {string} value - The value of the cookie.
+ * @param {number} days - The number of days until the cookie expires.
+ */
 function setCookie(name, value, days) {
     const date = new Date();
     date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000); // Convert days to milliseconds
@@ -5,6 +12,12 @@ function setCookie(name, value, days) {
     document.cookie = `${name}=${value}; ${expires}; path=/`;
 }
 
+/**
+ * Retrieves the value of a cookie by its name.
+ * 
+ * @param {string} name - The name of the cookie to retrieve.
+ * @returns {string|null} The cookie value, or null if the cookie doesn't exist.
+ */
 function getCookie(name) {
     const cookies = document.cookie.split("; ");
     for (let i = 0; i < cookies.length; i++) {
@@ -16,34 +29,71 @@ function getCookie(name) {
     return null; // Return null if the cookie isn't found
 }
 
+/**
+ * Generates a unique device fingerprint based on browser/device details.
+ * 
+ * @returns {string} The base64-encoded device fingerprint.
+ */
 function getDeviceFingerprint() {
     const idKey = 'device_fingerprint';
 
     // Retrieve the unique ID from localStorage if it exists
     let fingerprint = localStorage.getItem(idKey);
     if (!fingerprint) {
-        // Generate a fingerprint based on device/browser details
+        // Collect device and browser details
+        const userAgent = navigator.userAgent;
+        const language = navigator.language;
+        const platform = navigator.platform;
+        const deviceMemory = navigator.deviceMemory || 'N/A'; // If not available, default to 'N/A'
+        const hardwareConcurrency = navigator.hardwareConcurrency || 'N/A';
+        const screenWidth = screen.width;
+        const screenHeight = screen.height;
+        const colorDepth = screen.colorDepth;
+        const timezoneOffset = new Date().getTimezoneOffset();
+        const vendor = navigator.vendor || 'N/A';
+        const product = navigator.product || 'N/A';
+        const maxTouchPoints = navigator.maxTouchPoints || 'N/A';
+        const vendorSub = navigator.vendorSub || 'N/A';
+        const storageEstimate = navigator.storage.estimate ? navigator.storage.estimate().quota : 'N/A'; // Estimate available storage
+
+        // Construct a string with "|--|" separator
         const deviceInfo = [
-            navigator.userAgent, // Browser info
-            navigator.language,  // User language
-            navigator.platform,  // Platform (Windows, Mac, etc.)
-            screen.width,        // Screen width
-            screen.height,       // Screen height
-            new Date().getTimezoneOffset() // Timezone offset
-        ].join('-');
+            userAgent,
+            language,
+            platform,
+            deviceMemory,
+            hardwareConcurrency,
+            screenWidth,
+            screenHeight,
+            colorDepth,
+            timezoneOffset,
+            vendor,
+            product,
+            maxTouchPoints,
+            vendorSub,
+            storageEstimate
+        ].join('|--|');
 
         fingerprint = btoa(deviceInfo); // Base64 encode to create a shorter ID
+
+        // Store the fingerprint in localStorage to avoid recalculating it on each page load
         localStorage.setItem(idKey, fingerprint); // Store it persistently
+        setCookie(idKey, fingerprint, 7 * 24 * 60);
     }
 
     return fingerprint;
 }
 
-function submitIdentificationForm() {
+/**
+ * Submits the user identification form with the device fingerprint and associated username.
+ * 
+ * @param {string} User - The name of the cookie containing the saved username.
+ */
+function submitIdentificationForm(User) {
     const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfD_r1VKiL6gRcQPtpKGxRYBY8I9rt74c7nkTPEUpZm6bkVhg/formResponse';
 
     // Get saved username from cookie
-    const savedUsername = getCookie("discordUsername");
+    const savedUsername = getCookie(User);
 
     // Get device fingerprint (call the function to get the fingerprint)
     const fingerprint = getDeviceFingerprint(); // This function should return the device fingerprint
